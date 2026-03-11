@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { WalletProvider } from "@/components/providers/WalletProvider";
 
 export const metadata: Metadata = {
   title: "TerraFlow — One Vault. Five Economies.",
@@ -20,7 +21,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
+        <WalletProvider>
+          {children}
+        </WalletProvider>
       </body>
     </html>
   );
