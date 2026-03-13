@@ -1,42 +1,77 @@
 /**
  * Typed REST wrapper for the Ranger Earn API (api.voltr.xyz)
- * Docs: https://docs.ranger.finance/developers/api-overview
- *
- * All transaction endpoints return unsigned serialized txns (base58).
- * The client deserializes, signs with wallet, and broadcasts.
+ * Matches real API response shapes from mainnet vaults.
  */
 
 import { RANGER_API_BASE } from "./constants";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Real API Response Types ──────────────────────────────────────────────────
 
-export interface VaultInfo {
+export interface RangerVaultResponse {
+  success: boolean;
+  vault: RangerVault;
+}
+
+export interface RangerVault {
   pubkey: string;
   name: string;
   description: string;
-  assetMint: string;
-  totalAssets: number;         // in base units (lamports / USDC micro)
-  totalAssetsUsd: number;
-  apy: number;                 // blended APY (%)
-  tvl: number;
+  externalUri: string;
+  icon: string;
+  totalValue: number;           // micro-units (6 decimals for USDC)
+  withdrawalWaitingPeriod: number;
   maxCap: number;
-  fees: {
-    issuance: number;          // bps
-    redemption: number;        // bps
-    managerManagement: number; // bps annualized
-    managerPerformance: number;// bps
-    adminManagement: number;
-    adminPerformance: number;
+  riskDisclaimer: string;
+  feeConfiguration: {
+    performanceFee: number;
+    managementFee: number;
+    issuanceFee: number;
+    redemptionFee: number;
   };
-  sharePrice: number;          // assets per LP token
-  strategies: VaultStrategy[];
+  org: {
+    name: string;
+    description: string;
+    web: string;
+    logo: string;
+    social: string;
+  };
+  token: {
+    name: string;
+    decimals: number;
+    icon: string;
+    mint: string;
+    programId: string;
+    pythFeedId: string;
+    price: number;
+  };
+  apy: {
+    oneDay: number;
+    sevenDays: number;
+    thirtyDays: number;
+    allTime: number;
+  };
+  dailyStats: {
+    dateLabels: string[];
+    apyData: number[];
+    tvlData: number[];
+    lpData: number[];
+  };
+  allocations: RangerAllocation[];
+  integrations: RangerIntegration[];
+  strategies: string[];
 }
 
-export interface VaultStrategy {
-  pubkey: string;
-  adaptorProgram: string;
-  totalValue: number;
-  allocationPct: number;
+export interface RangerAllocation {
+  orgName: string;
+  strategyDescription: string;
+  tokenName: string;
+  positionValue: number;         // micro-units
+}
+
+export interface RangerIntegration {
+  adaptorPk: string;
+  whitelisted: boolean;
+  feature: string;
 }
 
 export interface UserBalance {
@@ -52,7 +87,7 @@ export interface PendingWithdrawal {
 }
 
 export interface UnsignedTx {
-  transaction: string; // base58 serialized versioned transaction
+  transaction: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -60,7 +95,7 @@ export interface UnsignedTx {
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${RANGER_API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
-    next: { revalidate: 30 }, // 30s cache in Next.js
+    next: { revalidate: 30 },
   });
   if (!res.ok) throw new Error(`Ranger API ${path}: ${res.status}`);
   return res.json() as Promise<T>;
@@ -78,12 +113,19 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
 
 // ─── Vault Queries ────────────────────────────────────────────────────────────
 
-/** Full vault info — config, APY, strategies, fees */
-export async function getVault(vaultPubkey: string): Promise<VaultInfo> {
-  return get<VaultInfo>(`/vault/${vaultPubkey}`);
+/** Full vault info from Ranger API */
+export async function getVault(vaultPubkey: string): Promise<RangerVault> {
+  const res = await get<RangerVaultResponse>(`/vault/${vaultPubkey}`);
+  return res.vault;
 }
 
-/** Share price at a given timestamp (unix seconds). Omit ts for current. */
+/** Fetch all vaults */
+export async function getAllVaults(): Promise<RangerVault[]> {
+  const res = await get<{ success: boolean; vaults: RangerVault[] }>("/vaults");
+  return res.vaults ?? [];
+}
+
+/** Share price at a given timestamp */
 export async function getSharePrice(vaultPubkey: string, ts?: number): Promise<{ sharePrice: number }> {
   const q = ts ? `?ts=${ts}` : "";
   return get(`/vault/${vaultPubkey}/share-price${q}`);
@@ -100,19 +142,11 @@ export async function getFeesEarned(
 
 // ─── User Queries ─────────────────────────────────────────────────────────────
 
-/** User's vault position in underlying assets */
-export async function getUserBalance(
-  vaultPubkey: string,
-  userPubkey: string
-): Promise<UserBalance> {
+export async function getUserBalance(vaultPubkey: string, userPubkey: string): Promise<UserBalance> {
   return get(`/vault/${vaultPubkey}/user/${userPubkey}/balance`);
 }
 
-/** Pending withdrawal request, if any */
-export async function getPendingWithdrawal(
-  vaultPubkey: string,
-  userPubkey: string
-): Promise<PendingWithdrawal | null> {
+export async function getPendingWithdrawal(vaultPubkey: string, userPubkey: string): Promise<PendingWithdrawal | null> {
   try {
     return await get(`/vault/${vaultPubkey}/user/${userPubkey}/pending-withdrawal`);
   } catch {
@@ -122,58 +156,22 @@ export async function getPendingWithdrawal(
 
 // ─── Transaction Builders (return unsigned txns) ──────────────────────────────
 
-/** Build a deposit transaction. Returns base58 unsigned versioned tx. */
-export async function buildDepositTx(
-  vaultPubkey: string,
-  userPubkey: string,
-  lamportAmount: number
-): Promise<UnsignedTx> {
-  return post(`/vault/${vaultPubkey}/deposit`, {
-    userPubkey,
-    lamportAmount,
-  });
+export async function buildDepositTx(vaultPubkey: string, userPubkey: string, lamportAmount: number): Promise<UnsignedTx> {
+  return post(`/vault/${vaultPubkey}/deposit`, { userPubkey, lamportAmount });
 }
 
-/** Build a withdrawal request transaction */
-export async function buildRequestWithdrawTx(
-  vaultPubkey: string,
-  userPubkey: string,
-  lamportAmount: number,
-  isWithdrawAll = false
-): Promise<UnsignedTx> {
-  return post(`/vault/${vaultPubkey}/request-withdrawal`, {
-    userPubkey,
-    lamportAmount,
-    isWithdrawAll,
-  });
+export async function buildRequestWithdrawTx(vaultPubkey: string, userPubkey: string, lamportAmount: number, isWithdrawAll = false): Promise<UnsignedTx> {
+  return post(`/vault/${vaultPubkey}/request-withdrawal`, { userPubkey, lamportAmount, isWithdrawAll });
 }
 
-/** Build the execute-withdrawal transaction (after waiting period) */
-export async function buildWithdrawTx(
-  vaultPubkey: string,
-  userPubkey: string
-): Promise<UnsignedTx> {
+export async function buildWithdrawTx(vaultPubkey: string, userPubkey: string): Promise<UnsignedTx> {
   return post(`/vault/${vaultPubkey}/withdraw`, { userPubkey });
 }
 
-/** Cancel a pending withdrawal */
-export async function buildCancelWithdrawTx(
-  vaultPubkey: string,
-  userPubkey: string
-): Promise<UnsignedTx> {
+export async function buildCancelWithdrawTx(vaultPubkey: string, userPubkey: string): Promise<UnsignedTx> {
   return post(`/vault/${vaultPubkey}/cancel-withdrawal`, { userPubkey });
 }
 
-/** Direct withdraw — no waiting period (if vault configured for it) */
-export async function buildDirectWithdrawTx(
-  vaultPubkey: string,
-  userPubkey: string,
-  lamportAmount: number,
-  isWithdrawAll = false
-): Promise<UnsignedTx> {
-  return post(`/vault/${vaultPubkey}/direct-withdraw`, {
-    userPubkey,
-    lamportAmount,
-    isWithdrawAll,
-  });
+export async function buildDirectWithdrawTx(vaultPubkey: string, userPubkey: string, lamportAmount: number, isWithdrawAll = false): Promise<UnsignedTx> {
+  return post(`/vault/${vaultPubkey}/direct-withdraw`, { userPubkey, lamportAmount, isWithdrawAll });
 }

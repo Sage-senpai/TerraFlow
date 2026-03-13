@@ -1,8 +1,14 @@
 "use client";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { yieldHistory } from "@/lib/mockData";
+
+interface YieldChartProps {
+  showAll?: boolean;
+  /** Live daily APY data from Ranger API */
+  liveData?: { date: string; apy: number }[];
+}
 
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
   if (active && payload && payload.length) {
@@ -12,7 +18,7 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
         {payload.map((p) => (
           <div key={p.name} className="flex items-center justify-between gap-4">
             <span className="text-xs text-[#8F98A3] capitalize">{p.name}</span>
-            <span className="font-mono text-xs font-semibold" style={{ color: p.color }}>{p.value}%</span>
+            <span className="font-mono text-xs font-semibold" style={{ color: p.color }}>{typeof p.value === "number" ? p.value.toFixed(2) : p.value}%</span>
           </div>
         ))}
       </div>
@@ -21,7 +27,55 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
   return null;
 };
 
-export function YieldChart({ showAll = false }: { showAll?: boolean }) {
+export function YieldChart({ showAll = false, liveData }: YieldChartProps) {
+  // Use live data if provided, otherwise fall back to mock
+  if (liveData && liveData.length > 0) {
+    // Show last 90 days, sampled every 3 days for readability
+    const recent = liveData.slice(-90).filter((_, i) => i % 3 === 0);
+    const apyValues = recent.map(d => d.apy);
+    const minApy = Math.max(0, Math.floor(Math.min(...apyValues) - 1));
+    const maxApy = Math.ceil(Math.max(...apyValues) + 1);
+
+    return (
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={recent} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+          <defs>
+            <linearGradient id="gLive" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#F8C61E" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#F8C61E" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2A3340" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fill: "#4A5568", fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: string) => v.slice(5)} // "2026-01-15" → "01-15"
+          />
+          <YAxis
+            tick={{ fill: "#4A5568", fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: number) => `${v}%`}
+            domain={[minApy, maxApy]}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="apy"
+            name="Daily APY"
+            stroke="#F8C61E"
+            strokeWidth={2}
+            fill="url(#gLive)"
+            dot={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  // Fallback: mock sector data
   return (
     <ResponsiveContainer width="100%" height={220}>
       <AreaChart data={yieldHistory} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
@@ -45,7 +99,7 @@ export function YieldChart({ showAll = false }: { showAll?: boolean }) {
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#2A3340" vertical={false} />
         <XAxis dataKey="date" tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[6, 22]} />
+        <YAxis tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}%`} domain={[6, 22]} />
         <Tooltip content={<CustomTooltip />} />
         {showAll ? (
           <>

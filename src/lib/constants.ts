@@ -11,6 +11,10 @@ export const TERRAFLOW_VAULT_PUBKEY = process.env.NEXT_PUBLIC_VAULT_PUBKEY
   ? new PublicKey(process.env.NEXT_PUBLIC_VAULT_PUBKEY)
   : null;
 
+// Reference vault for live data display (Stablecoin Multi Lend — USDC, uses Kamino/Drift/Save)
+// Read-only — shows real Ranger data before TerraFlow's own vault is deployed
+export const REFERENCE_VAULT_PUBKEY = "DT3srSkTf2tyoAyz9nHf112MChkKEG7LGTGaGWccwgkE";
+
 // Ranger REST API
 export const RANGER_API_BASE = "https://api.voltr.xyz";
 

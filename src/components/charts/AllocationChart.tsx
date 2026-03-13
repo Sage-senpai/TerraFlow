@@ -1,6 +1,18 @@
 "use client";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { allocations } from "@/lib/mockData";
+
+interface AllocationData {
+  sector: string;
+  pct: number;
+  value: number;
+  apy: number;
+  color: string;
+}
+
+interface AllocationChartProps {
+  data?: AllocationData[];
+  blendedApy?: number;
+}
 
 const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: { apy: number; dollarValue: number } }> }) => {
   if (active && payload && payload.length) {
@@ -17,7 +29,16 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<
   return null;
 };
 
-export function AllocationChart() {
+// Default mock data used when no props are passed
+const defaultData: AllocationData[] = [
+  { sector: "Housing", pct: 40, value: 17280, apy: 12, color: "#F8C61E" },
+  { sector: "Trade",   pct: 30, value: 12960, apy: 18, color: "#28C76F" },
+  { sector: "Crypto",  pct: 30, value: 12960, apy: 9,  color: "#7B6FF0" },
+];
+
+export function AllocationChart({ data, blendedApy }: AllocationChartProps) {
+  const allocations = data ?? defaultData;
+  const displayApy = blendedApy ?? 13.2;
   const chartData = allocations.map(a => ({ name: a.sector, pct: a.pct, apy: a.apy, dollarValue: a.value }));
 
   return (
@@ -42,15 +63,13 @@ export function AllocationChart() {
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
-        {/* Center label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="font-mono text-xs text-[#8F98A3]">Blended</span>
-          <span className="font-mono font-bold text-[#F8C61E] text-lg leading-tight">13.2%</span>
+          <span className="font-mono font-bold text-[#F8C61E] text-lg leading-tight">{displayApy.toFixed(1)}%</span>
           <span className="font-mono text-xs text-[#8F98A3]">APY</span>
         </div>
       </div>
 
-      {/* Legend */}
       <div className="flex flex-col gap-3 flex-1">
         {allocations.map((a) => (
           <div key={a.sector} className="flex items-center gap-3">

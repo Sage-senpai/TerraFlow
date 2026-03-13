@@ -1,94 +1,152 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { getVault, getUserBalance, VaultInfo, UserBalance } from "@/lib/rangerApi";
-import { TERRAFLOW_VAULT_PUBKEY } from "@/lib/constants";
-import { vaultStats, allocations } from "@/lib/mockData";
+import { getVault, RangerVault, RangerAllocation } from "@/lib/rangerApi";
+import { TERRAFLOW_VAULT_PUBKEY, REFERENCE_VAULT_PUBKEY } from "@/lib/constants";
+
+// ─── TerraFlow sector mapping ─────────────────────────────────────────────────
+// Maps real Ranger allocations (orgName) → TerraFlow sectors
+// Kamino = Crypto, Drift = Trade, Save/Project0 = Housing (RWA bridge)
+
+export interface SectorAllocation {
+  sector: string;
+  pct: number;
+  value: number;
+  apy: number;
+  color: string;
+  description: string;
+  protocols: string[];
+}
 
 export interface TerraFlowVaultData {
-  // Vault-level
   totalValue: number;
-  totalValueUsd: number;
-  apy: number;
-  tvl: number;
+  apy: { oneDay: number; sevenDays: number; thirtyDays: number; allTime: number };
   sharePrice: number;
-  issuanceFee: number;
-  redemptionFee: number;
-  // User-level
-  userBalance: number;
-  userBalanceUsd: number;
-  // State
+  fees: { performance: number; management: number; issuance: number; redemption: number };
+  sectors: SectorAllocation[];
+  dailyDates: string[];
+  dailyApy: number[];
+  dailyTvl: number[];
+  vaultPubkey: string;
+  vaultName: string;
   isLoading: boolean;
-  isLive: boolean; // true = real data, false = mock fallback
+  isLive: boolean;
   error: string | null;
   refresh: () => void;
 }
 
-const MOCK_DATA: TerraFlowVaultData = {
-  totalValue: vaultStats.totalValue,
-  totalValueUsd: vaultStats.totalValue,
-  apy: vaultStats.apy,
-  tvl: vaultStats.tvl,
-  sharePrice: 1.184,
-  issuanceFee: 10,
-  redemptionFee: 10,
-  userBalance: 43200,
-  userBalanceUsd: 43200,
-  isLoading: false,
-  isLive: false,
-  error: null,
-  refresh: () => {},
-};
+function mapAllocationsToSectors(allocations: RangerAllocation[]): SectorAllocation[] {
+  const sectorMap: Record<string, { value: number; protocols: Set<string> }> = {
+    Housing: { value: 0, protocols: new Set() },
+    Trade: { value: 0, protocols: new Set() },
+    Crypto: { value: 0, protocols: new Set() },
+  };
 
-export function useVaultData(userPubkey?: string): TerraFlowVaultData {
-  const [data, setData] = useState<TerraFlowVaultData>({ ...MOCK_DATA, isLoading: true });
-
-  const fetch = useCallback(async () => {
-    if (!TERRAFLOW_VAULT_PUBKEY) {
-      // No vault deployed yet — use mock data
-      setData({ ...MOCK_DATA, isLoading: false });
-      return;
+  for (const a of allocations) {
+    const org = a.orgName.toLowerCase();
+    if (org.includes("kamino")) {
+      sectorMap.Crypto.value += a.positionValue;
+      sectorMap.Crypto.protocols.add(`${a.orgName} ${a.strategyDescription}`);
+    } else if (org.includes("drift")) {
+      sectorMap.Trade.value += a.positionValue;
+      sectorMap.Trade.protocols.add(`${a.orgName} ${a.strategyDescription}`);
+    } else {
+      sectorMap.Housing.value += a.positionValue;
+      sectorMap.Housing.protocols.add(`${a.orgName} ${a.strategyDescription}`);
     }
+  }
 
+  const total = Object.values(sectorMap).reduce((s, v) => s + v.value, 0) || 1;
+  const meta: Record<string, { color: string; description: string }> = {
+    Housing: { color: "#F8C61E", description: "Tokenized rental income" },
+    Trade:   { color: "#28C76F", description: "Invoice financing" },
+    Crypto:  { color: "#7B6FF0", description: "Liquid staking / lending" },
+  };
+
+  return Object.entries(sectorMap).map(([sector, { value, protocols }]) => ({
+    sector,
+    pct: Math.round((value / total) * 100),
+    value: value / 1_000_000,
+    apy: 0,
+    color: meta[sector].color,
+    description: meta[sector].description,
+    protocols: Array.from(protocols),
+  }));
+}
+
+export function useVaultData(): TerraFlowVaultData {
+  const [data, setData] = useState<TerraFlowVaultData>({
+    totalValue: 0,
+    apy: { oneDay: 0, sevenDays: 0, thirtyDays: 0, allTime: 0 },
+    sharePrice: 1,
+    fees: { performance: 0, management: 0, issuance: 0, redemption: 0 },
+    sectors: [],
+    dailyDates: [],
+    dailyApy: [],
+    dailyTvl: [],
+    vaultPubkey: "",
+    vaultName: "",
+    isLoading: true,
+    isLive: false,
+    error: null,
+    refresh: () => {},
+  });
+
+  const fetchData = useCallback(async () => {
     setData(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const vaultPubkey = TERRAFLOW_VAULT_PUBKEY.toBase58();
-      const [vault, userBal] = await Promise.all([
-        getVault(vaultPubkey),
-        userPubkey ? getUserBalance(vaultPubkey, userPubkey) : Promise.resolve(null),
-      ]);
+      const vaultPk = TERRAFLOW_VAULT_PUBKEY
+        ? TERRAFLOW_VAULT_PUBKEY.toBase58()
+        : REFERENCE_VAULT_PUBKEY;
+
+      const vault: RangerVault = await getVault(vaultPk);
+      const sectors = mapAllocationsToSectors(vault.allocations);
+
+      // Distribute APY across sectors with weighting
+      const baseApy = vault.apy.thirtyDays;
+      const weights: Record<string, number> = { Housing: 1.4, Trade: 1.8, Crypto: 1.0 };
+      const totalWeight = sectors.reduce((s, sec) => s + (sec.pct / 100) * (weights[sec.sector] || 1), 0) || 1;
+      for (const sec of sectors) {
+        sec.apy = Math.round(baseApy * ((weights[sec.sector] || 1) / totalWeight) * 10) / 10;
+      }
 
       setData({
-        totalValue: vault.totalAssetsUsd,
-        totalValueUsd: vault.totalAssetsUsd,
+        totalValue: vault.totalValue / 1_000_000,
         apy: vault.apy,
-        tvl: vault.tvl,
-        sharePrice: vault.sharePrice,
-        issuanceFee: vault.fees.issuance,
-        redemptionFee: vault.fees.redemption,
-        userBalance: userBal?.assetBalance ?? 0,
-        userBalanceUsd: userBal?.assetBalanceUsd ?? 0,
+        sharePrice: vault.totalValue / (vault.maxCap || vault.totalValue),
+        fees: {
+          performance: vault.feeConfiguration.performanceFee,
+          management: vault.feeConfiguration.managementFee,
+          issuance: vault.feeConfiguration.issuanceFee,
+          redemption: vault.feeConfiguration.redemptionFee,
+        },
+        sectors,
+        dailyDates: vault.dailyStats.dateLabels,
+        dailyApy: vault.dailyStats.apyData,
+        dailyTvl: vault.dailyStats.tvlData.map(v => v / 1_000_000),
+        vaultPubkey: vault.pubkey,
+        vaultName: vault.name,
         isLoading: false,
         isLive: true,
         error: null,
-        refresh: fetch,
+        refresh: fetchData,
       });
     } catch (err) {
-      // Fall back to mock if API unavailable
-      setData({
-        ...MOCK_DATA,
+      setData(prev => ({
+        ...prev,
         isLoading: false,
+        isLive: false,
         error: err instanceof Error ? err.message : "Failed to fetch vault data",
-        refresh: fetch,
-      });
+        refresh: fetchData,
+      }));
     }
-  }, [userPubkey]);
+  }, []);
 
   useEffect(() => {
-    fetch();
-    const interval = setInterval(fetch, 30_000); // refresh every 30s
+    fetchData();
+    const interval = setInterval(fetchData, 30_000);
     return () => clearInterval(interval);
-  }, [fetch]);
+  }, [fetchData]);
 
   return data;
 }
