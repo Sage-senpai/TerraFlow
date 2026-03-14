@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { Bell, Settings } from "lucide-react";
 import { ConnectWalletButton } from "@/components/ui/ConnectWalletButton";
+import { NotificationPanel } from "@/components/ui/NotificationPanel";
+import { SettingsPanel } from "@/components/ui/SettingsPanel";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -21,13 +22,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="text-xs font-mono text-[#E8ECF0] ml-1">$284.5M</span>
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative p-2 rounded-lg text-[#4A5568] hover:text-[#8F98A3] hover:bg-[#1B222B] transition-colors">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#F8C61E]" />
-            </button>
-            <button className="p-2 rounded-lg text-[#4A5568] hover:text-[#8F98A3] hover:bg-[#1B222B] transition-colors">
-              <Settings className="w-4 h-4" />
-            </button>
+            <NotificationPanel />
+            <SettingsPanel />
             <ConnectWalletButton compact />
           </div>
         </header>

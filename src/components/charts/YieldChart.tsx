@@ -99,13 +99,13 @@ export function YieldChart({ showAll = false, liveData }: YieldChartProps) {
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#2A3340" vertical={false} />
         <XAxis dataKey="date" tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}%`} domain={[6, 22]} />
+        <YAxis tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}%`} domain={[4, 32]} />
         <Tooltip content={<CustomTooltip />} />
         {showAll ? (
           <>
-            <Area type="monotone" dataKey="housing" name="Housing" stroke="#F8C61E" strokeWidth={1.5} fill="url(#gHousing)" dot={false} />
-            <Area type="monotone" dataKey="trade" name="Trade" stroke="#28C76F" strokeWidth={1.5} fill="url(#gTrade)" dot={false} />
-            <Area type="monotone" dataKey="crypto" name="Crypto" stroke="#7B6FF0" strokeWidth={1.5} fill="url(#gCrypto)" dot={false} />
+            <Area type="monotone" dataKey="stableYield" name="Stable Yield" stroke="#F8C61E" strokeWidth={1.5} fill="url(#gHousing)" dot={false} />
+            <Area type="monotone" dataKey="activeTrading" name="Active Trading" stroke="#28C76F" strokeWidth={1.5} fill="url(#gTrade)" dot={false} />
+            <Area type="monotone" dataKey="defiYield" name="DeFi Yield" stroke="#7B6FF0" strokeWidth={1.5} fill="url(#gCrypto)" dot={false} />
           </>
         ) : (
           <Area type="monotone" dataKey="blended" name="Blended APY" stroke="#F8C61E" strokeWidth={2} fill="url(#gBlended)" dot={false} />

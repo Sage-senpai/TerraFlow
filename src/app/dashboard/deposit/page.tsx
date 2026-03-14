@@ -9,9 +9,9 @@ import { Info, Zap, ExternalLink } from "lucide-react";
 import { TERRAFLOW_VAULT_PUBKEY } from "@/lib/constants";
 
 const strategies = [
-  { id: "balanced", label: "Balanced", desc: "Equal-weight across all sectors", apy: 13.0, risk: "Medium" },
-  { id: "stable",   label: "Stable",   desc: "Housing-heavy, low volatility",   apy: 11.5, risk: "Low"    },
-  { id: "growth",   label: "Growth",   desc: "Trade-heavy, maximum APY",         apy: 16.8, risk: "Higher" },
+  { id: "balanced", label: "Balanced", desc: "Equal-weight: Drift Earn + Perps + Kamino", apy: 14.2, risk: "Medium" },
+  { id: "stable",   label: "Stable",   desc: "Heavy on Drift Earn + Jupiter Lend",        apy: 10.5, risk: "Low"    },
+  { id: "growth",   label: "Growth",   desc: "Heavy on Drift funding rate farming",        apy: 22.0, risk: "Higher" },
 ];
 const riskColors: Record<string, string> = { Low: "#28C76F", Medium: "#F8C61E", Higher: "#FF9F43" };
 

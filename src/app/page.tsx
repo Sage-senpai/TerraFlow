@@ -3,40 +3,40 @@ import { ArrowRight, Zap, Shield, TrendingUp, ChevronRight, Globe, Activity } fr
 
 const sectors = [
   {
-    name: "Housing",
-    apy: "12%",
-    desc: "Tokenized rental income from real-world properties via Ondo Finance.",
-    icon: "🏠",
+    name: "Stable Yield",
+    apy: "5–8%",
+    desc: "Drift Earn USDC lending + Jupiter Lend. Low-risk base yield layer with automated rate optimization.",
+    icon: "🏦",
     color: "#F8C61E",
     bg: "rgba(248,198,30,0.07)",
     border: "rgba(248,198,30,0.15)",
-    tag: "Real World Asset",
+    tag: "Drift Earn + Jupiter",
   },
   {
-    name: "Trade",
-    apy: "18%",
-    desc: "Invoice financing pools — short-duration, high-yield commercial debt.",
-    icon: "📦",
+    name: "Active Trading",
+    apy: "15–30%",
+    desc: "Delta-neutral funding rate farming on Drift. Long spot + short perp captures premium without directional risk.",
+    icon: "📊",
     color: "#28C76F",
     bg: "rgba(40,199,111,0.07)",
     border: "rgba(40,199,111,0.15)",
-    tag: "Invoice Finance",
+    tag: "Drift Perps",
   },
   {
-    name: "Crypto",
-    apy: "9%",
-    desc: "Liquid staking optimization across Solana validators. Auto-compounding.",
+    name: "DeFi Yield",
+    apy: "6–12%",
+    desc: "Kamino multi-market lending optimization. Capital rotates across Main, JLP, and Alt markets for peak rates.",
     icon: "🔷",
     color: "#7B6FF0",
     bg: "rgba(123,111,240,0.07)",
     border: "rgba(123,111,240,0.15)",
-    tag: "LST Strategy",
+    tag: "Kamino Markets",
   },
 ];
 
 const stats = [
   { label: "Total Value Locked", value: "$284.5M" },
-  { label: "Avg. Blended APY", value: "13.2%" },
+  { label: "Avg. Blended APY", value: "14.2%" },
   { label: "Active Depositors", value: "12,843" },
   { label: "AI Rebalances / Day", value: "47" },
 ];
@@ -51,13 +51,13 @@ const steps = [
   {
     n: "02",
     title: "Deposit Once",
-    desc: "Choose USDC or SOL. Select Balanced, Stable, or Growth strategy.",
+    desc: "Deposit USDC. Select Balanced, Stable, or Growth allocation.",
     icon: "💳",
   },
   {
     n: "03",
     title: "TerraFlow Allocates",
-    desc: "AI routes capital across Housing, Trade & Crypto sectors instantly.",
+    desc: "AI routes capital across Drift, Jupiter & Kamino strategies via Ranger Earn.",
     icon: "⚡",
   },
   {
@@ -123,8 +123,8 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-lg md:text-xl text-[#8F98A3] max-w-2xl mx-auto leading-relaxed mb-10">
-            TerraFlow is an AI-managed yield vault that routes your capital across real-world economic sectors —
-            Housing, Trade, and Crypto — optimizing returns while you do nothing.
+            TerraFlow is an AI-managed yield vault on Ranger Earn that routes your USDC across Drift, Kamino, and Jupiter —
+            capturing funding rates, lending spreads, and basis trades while you do nothing.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -149,7 +149,7 @@ export default function LandingPage() {
           {/* Capital flow diagram */}
           <div className="mt-16 inline-flex flex-col items-center gap-0">
             <div className="px-6 py-3 rounded-xl bg-[#1B222B] border border-[#2A3340] text-sm font-mono text-[#E8ECF0]">
-              Your Deposit (USDC / SOL)
+              Your Deposit (USDC)
             </div>
             <div className="flex flex-col items-center gap-0 my-1">
               <div className="w-px h-5 bg-[#2A3340]" />
@@ -177,9 +177,9 @@ export default function LandingPage() {
             </div>
             <div className="flex gap-3">
               {[
-                { label: "Housing", apy: "12%", color: "#F8C61E", pct: "40%" },
-                { label: "Trade", apy: "18%", color: "#28C76F", pct: "30%" },
-                { label: "Crypto", apy: "9%", color: "#7B6FF0", pct: "30%" },
+                { label: "Stable Yield", apy: "5–8%", color: "#F8C61E", pct: "35%" },
+                { label: "Active Trading", apy: "15–30%", color: "#28C76F", pct: "35%" },
+                { label: "DeFi Yield", apy: "6–12%", color: "#7B6FF0", pct: "30%" },
               ].map(s => (
                 <div key={s.label} className="px-4 py-2.5 rounded-xl border text-sm text-center" style={{ background: `${s.color}0A`, borderColor: `${s.color}25` }}>
                   <p className="font-mono font-bold" style={{ color: s.color }}>{s.apy}</p>
@@ -264,8 +264,8 @@ export default function LandingPage() {
           </div>
           <div className="mt-6 grid md:grid-cols-2 gap-6">
             {[
-              { icon: "🏥", name: "Healthcare", desc: "Medical receivable financing", tag: "Coming Soon", color: "#FF9F43" },
-              { icon: "🌱", name: "Climate", desc: "Carbon credit liquidity markets", tag: "Coming Soon", color: "#28C76F" },
+              { icon: "🏠", name: "RWA Yield", desc: "Tokenized real-world asset lending via Ondo Finance", tag: "Coming Soon", color: "#FF9F43" },
+              { icon: "🌱", name: "Carbon Credits", desc: "Carbon credit liquidity markets on Solana", tag: "Coming Soon", color: "#28C76F" },
             ].map(s => (
               <div key={s.name} className="p-5 rounded-2xl border border-[#2A3340] bg-[#1B222B] flex items-center gap-4 opacity-60">
                 <span className="text-3xl">{s.icon}</span>
@@ -300,7 +300,7 @@ export default function LandingPage() {
               {
                 icon: <Activity className="w-5 h-5 text-[#F8C61E]" />,
                 title: "AI + Keeper Architecture",
-                desc: "Off-chain AI signals are validated on-chain via Pyth oracles before executing any allocation change.",
+                desc: "Off-chain AI monitors Drift funding rates and lending spreads. On-chain keeper executes rebalances via Ranger vault manager.",
                 color: "#F8C61E",
               },
               {
@@ -343,8 +343,8 @@ export default function LandingPage() {
                   icon: "💡",
                 },
                 {
-                  title: "The Moat",
-                  body: "Real-world asset integration via Ondo Finance creates yield uncorrelated with crypto markets — a structural advantage no pure DeFi protocol can replicate.",
+                  title: "The Edge",
+                  body: "Delta-neutral Drift strategies capture funding rate alpha without directional risk. AI monitors rates 24/7 and rebalances across Drift, Kamino, and Jupiter in real-time.",
                   icon: "🏰",
                 },
               ].map(item => (
@@ -373,7 +373,7 @@ export default function LandingPage() {
                 },
                 {
                   title: "Competitive Advantage",
-                  body: "No competitor combines AI rebalancing + RWA yield + LST optimization in a single unified vault interface with Bloomberg-grade financial intelligence.",
+                  body: "No competitor combines AI rebalancing + Drift funding rate farming + multi-protocol lending in a single vault interface with Bloomberg-grade intelligence.",
                   icon: "🚀",
                 },
               ].map(item => (
@@ -432,7 +432,7 @@ export default function LandingPage() {
             <span className="text-[#4A5568] text-sm ml-2">One Vault. Five Economies.</span>
           </div>
           <p className="text-xs text-[#4A5568] font-mono">
-            Not financial advice. DeFi protocols carry risk. © 2026 TerraFlow Protocol.
+            Built on Ranger Earn · Drift · Kamino · Jupiter — Not financial advice. © 2026 TerraFlow Protocol.
           </p>
         </div>
       </footer>

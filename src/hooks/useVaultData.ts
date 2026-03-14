@@ -36,30 +36,31 @@ export interface TerraFlowVaultData {
 
 function mapAllocationsToSectors(allocations: RangerAllocation[]): SectorAllocation[] {
   const sectorMap: Record<string, { value: number; protocols: Set<string> }> = {
-    Housing: { value: 0, protocols: new Set() },
-    Trade: { value: 0, protocols: new Set() },
-    Crypto: { value: 0, protocols: new Set() },
+    "Stable Yield": { value: 0, protocols: new Set() },
+    "Active Trading": { value: 0, protocols: new Set() },
+    "DeFi Yield": { value: 0, protocols: new Set() },
   };
 
   for (const a of allocations) {
     const org = a.orgName.toLowerCase();
     if (org.includes("kamino")) {
-      sectorMap.Crypto.value += a.positionValue;
-      sectorMap.Crypto.protocols.add(`${a.orgName} ${a.strategyDescription}`);
+      sectorMap["DeFi Yield"].value += a.positionValue;
+      sectorMap["DeFi Yield"].protocols.add(`${a.orgName} ${a.strategyDescription}`);
     } else if (org.includes("drift")) {
-      sectorMap.Trade.value += a.positionValue;
-      sectorMap.Trade.protocols.add(`${a.orgName} ${a.strategyDescription}`);
+      sectorMap["Active Trading"].value += a.positionValue;
+      sectorMap["Active Trading"].protocols.add(`${a.orgName} ${a.strategyDescription}`);
     } else {
-      sectorMap.Housing.value += a.positionValue;
-      sectorMap.Housing.protocols.add(`${a.orgName} ${a.strategyDescription}`);
+      // Save, Project 0, Jupiter → Stable Yield (lending)
+      sectorMap["Stable Yield"].value += a.positionValue;
+      sectorMap["Stable Yield"].protocols.add(`${a.orgName} ${a.strategyDescription}`);
     }
   }
 
   const total = Object.values(sectorMap).reduce((s, v) => s + v.value, 0) || 1;
   const meta: Record<string, { color: string; description: string }> = {
-    Housing: { color: "#F8C61E", description: "Tokenized rental income" },
-    Trade:   { color: "#28C76F", description: "Invoice financing" },
-    Crypto:  { color: "#7B6FF0", description: "Liquid staking / lending" },
+    "Stable Yield":    { color: "#F8C61E", description: "Drift Earn + Jupiter Lend" },
+    "Active Trading":  { color: "#28C76F", description: "Drift delta-neutral funding rate" },
+    "DeFi Yield":      { color: "#7B6FF0", description: "Kamino multi-market lending" },
   };
 
   return Object.entries(sectorMap).map(([sector, { value, protocols }]) => ({
@@ -104,7 +105,7 @@ export function useVaultData(): TerraFlowVaultData {
 
       // Distribute APY across sectors with weighting
       const baseApy = vault.apy.thirtyDays;
-      const weights: Record<string, number> = { Housing: 1.4, Trade: 1.8, Crypto: 1.0 };
+      const weights: Record<string, number> = { "Stable Yield": 1.0, "Active Trading": 2.5, "DeFi Yield": 1.4 };
       const totalWeight = sectors.reduce((s, sec) => s + (sec.pct / 100) * (weights[sec.sector] || 1), 0) || 1;
       for (const sec of sectors) {
         sec.apy = Math.round(baseApy * ((weights[sec.sector] || 1) / totalWeight) * 10) / 10;

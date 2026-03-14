@@ -1,16 +1,29 @@
+"use client";
+import { useState } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { activityLog } from "@/lib/mockData";
 import { ArrowDownToLine, ArrowLeftRight, Sparkles, Shield } from "lucide-react";
 
 const typeConfig = {
-  deposit: { icon: ArrowDownToLine, color: "#28C76F", bg: "rgba(40,199,111,0.1)", badge: "positive" as const, label: "Deposit" },
-  rebalance: { icon: ArrowLeftRight, color: "#F8C61E", bg: "rgba(248,198,30,0.1)", badge: "sunburst" as const, label: "Rebalance" },
-  yield: { icon: Sparkles, color: "#7B6FF0", bg: "rgba(123,111,240,0.1)", badge: "crypto" as const, label: "Yield" },
-  hedge: { icon: Shield, color: "#FF9F43", bg: "rgba(255,159,67,0.1)", badge: "warning" as const, label: "Hedge" },
+  deposit: { icon: ArrowDownToLine, color: "#28C76F", bg: "rgba(40,199,111,0.1)", badge: "positive" as const, label: "Deposit", filter: "Deposits" },
+  rebalance: { icon: ArrowLeftRight, color: "#F8C61E", bg: "rgba(248,198,30,0.1)", badge: "sunburst" as const, label: "Rebalance", filter: "Rebalances" },
+  yield: { icon: Sparkles, color: "#7B6FF0", bg: "rgba(123,111,240,0.1)", badge: "crypto" as const, label: "Yield", filter: "Yields" },
+  hedge: { icon: Shield, color: "#FF9F43", bg: "rgba(255,159,67,0.1)", badge: "warning" as const, label: "Hedge", filter: "Rebalances" },
 };
 
+const filters = ["All", "Deposits", "Yields", "Rebalances"] as const;
+
 export default function ActivityPage() {
+  const [activeFilter, setActiveFilter] = useState<string>("All");
+
+  const filtered = activeFilter === "All"
+    ? activityLog
+    : activityLog.filter(item => {
+        const cfg = typeConfig[item.type as keyof typeof typeConfig];
+        return cfg?.filter === activeFilter;
+      });
+
   return (
     <div className="space-y-6">
       <div>
@@ -23,13 +36,14 @@ export default function ActivityPage() {
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-[#E8ECF0]">Transaction Log</h2>
             <div className="flex gap-2">
-              {["All", "Deposits", "Yields", "Rebalances"].map(f => (
+              {filters.map(f => (
                 <button
                   key={f}
+                  onClick={() => setActiveFilter(f)}
                   className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    f === "All"
+                    f === activeFilter
                       ? "bg-[rgba(248,198,30,0.1)] text-[#F8C61E] border border-[rgba(248,198,30,0.2)]"
-                      : "text-[#8F98A3] hover:text-[#E8ECF0] hover:bg-[#252C37]"
+                      : "text-[#8F98A3] hover:text-[#E8ECF0] hover:bg-[#252C37] border border-transparent"
                   }`}
                 >
                   {f}
@@ -40,7 +54,12 @@ export default function ActivityPage() {
         </CardHeader>
         <CardBody className="py-0">
           <div className="divide-y divide-[#2A3340]">
-            {activityLog.map((item) => {
+            {filtered.length === 0 && (
+              <div className="py-12 text-center">
+                <p className="text-sm text-[#4A5568]">No {activeFilter.toLowerCase()} found</p>
+              </div>
+            )}
+            {filtered.map((item) => {
               const cfg = typeConfig[item.type as keyof typeof typeConfig];
               const Icon = cfg.icon;
               return (

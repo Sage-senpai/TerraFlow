@@ -31,14 +31,14 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<
 
 // Default mock data used when no props are passed
 const defaultData: AllocationData[] = [
-  { sector: "Housing", pct: 40, value: 17280, apy: 12, color: "#F8C61E" },
-  { sector: "Trade",   pct: 30, value: 12960, apy: 18, color: "#28C76F" },
-  { sector: "Crypto",  pct: 30, value: 12960, apy: 9,  color: "#7B6FF0" },
+  { sector: "Stable Yield",    pct: 35, value: 15120, apy: 7,  color: "#F8C61E" },
+  { sector: "Active Trading",  pct: 35, value: 15120, apy: 22, color: "#28C76F" },
+  { sector: "DeFi Yield",      pct: 30, value: 12960, apy: 10, color: "#7B6FF0" },
 ];
 
 export function AllocationChart({ data, blendedApy }: AllocationChartProps) {
   const allocations = data ?? defaultData;
-  const displayApy = blendedApy ?? 13.2;
+  const displayApy = blendedApy ?? 14.2;
   const chartData = allocations.map(a => ({ name: a.sector, pct: a.pct, apy: a.apy, dollarValue: a.value }));
 
   return (

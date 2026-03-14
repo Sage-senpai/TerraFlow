@@ -1,10 +1,16 @@
+"use client";
+import { useState } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { portfolioPositions, vaultStats } from "@/lib/mockData";
-import { TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
+import { TrendingUp, TrendingDown, X, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 export default function PortfolioPage() {
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawStep, setWithdrawStep] = useState<"form" | "confirm" | "done">("form");
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -53,13 +59,13 @@ export default function PortfolioPage() {
                 style={{ background: `${pos.color}18` }}
               >
                 <span className="text-lg">
-                  {pos.sector === "Housing" ? "🏠" : pos.sector === "Trade" ? "📦" : "🔷"}
+                  {pos.sector === "Stable Yield" ? "🏦" : pos.sector === "Active Trading" ? "📊" : "🔷"}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-display font-semibold text-[#E8ECF0]">{pos.sector}</span>
-                  <Badge variant={pos.sector === "Housing" ? "housing" : pos.sector === "Trade" ? "trade" : "crypto"}>
+                  <Badge variant={pos.sector === "Stable Yield" ? "housing" : pos.sector === "Active Trading" ? "trade" : "crypto"}>
                     {pos.apy}% APY
                   </Badge>
                 </div>
@@ -107,12 +113,123 @@ export default function PortfolioPage() {
               </div>
             ))}
           </div>
-          <button className="mt-4 px-5 py-2.5 border border-[#2A3340] rounded-xl text-sm text-[#8F98A3]
-            hover:border-[#EA5455]/30 hover:text-[#EA5455] transition-all font-medium">
+          <button
+            onClick={() => { setShowWithdraw(true); setWithdrawStep("form"); setWithdrawAmount(""); }}
+            className="mt-4 px-5 py-2.5 border border-[#2A3340] rounded-xl text-sm text-[#8F98A3]
+              hover:border-[#EA5455]/30 hover:text-[#EA5455] transition-all font-medium"
+          >
             Initiate Withdrawal
           </button>
         </CardBody>
       </Card>
+
+      {/* Withdrawal Modal */}
+      {showWithdraw && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[#1B222B] border border-[#2A3340] rounded-2xl shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2A3340]">
+              <h3 className="font-display font-semibold text-[#E8ECF0]">
+                {withdrawStep === "done" ? "Withdrawal Requested" : "Withdraw Funds"}
+              </h3>
+              <button onClick={() => setShowWithdraw(false)} className="text-[#4A5568] hover:text-[#8F98A3]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5">
+              {withdrawStep === "form" && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs text-[#8F98A3] mb-1.5 block">Amount (USDC)</label>
+                    <input
+                      type="number"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-[#252C37] border border-[#2A3340] rounded-xl px-4 py-3
+                        font-mono text-xl text-[#E8ECF0] focus:outline-none focus:border-[#F8C61E]/50 transition-all placeholder-[#4A5568]"
+                    />
+                    <div className="flex gap-2 mt-2">
+                      {["25%", "50%", "75%", "Max"].map(pct => {
+                        const val = pct === "Max" ? vaultStats.totalValue : vaultStats.totalValue * parseInt(pct) / 100;
+                        return (
+                          <button
+                            key={pct}
+                            onClick={() => setWithdrawAmount(Math.floor(val).toString())}
+                            className="flex-1 py-1.5 rounded-lg text-xs font-mono text-[#8F98A3]
+                              bg-[#252C37] hover:bg-[#2A3340] hover:text-[#E8ECF0] border border-[#2A3340] transition-all"
+                          >
+                            {pct}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-[#252C37] border border-[#2A3340] p-3 space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#8F98A3]">Available</span>
+                      <span className="font-mono text-[#E8ECF0]">${vaultStats.totalValue.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#8F98A3]">Waiting period</span>
+                      <span className="font-mono text-[#E8ECF0]">~5 min</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#8F98A3]">Redemption fee</span>
+                      <span className="font-mono text-[#E8ECF0]">0%</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    fullWidth
+                    variant="danger"
+                    onClick={() => setWithdrawStep("confirm")}
+                    disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0}
+                  >
+                    Continue
+                  </Button>
+                </div>
+              )}
+
+              {withdrawStep === "confirm" && (
+                <div className="space-y-4">
+                  <div className="rounded-xl bg-[rgba(255,159,67,0.06)] border border-[rgba(255,159,67,0.15)] p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-[#FF9F43] flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-[#E8ECF0]">Confirm withdrawal</p>
+                        <p className="text-xs text-[#8F98A3] mt-1">
+                          Withdrawing <span className="font-mono text-[#E8ECF0]">{parseFloat(withdrawAmount).toLocaleString()} USDC</span> from the vault.
+                          Funds will be available after a ~5 minute waiting period.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button fullWidth variant="secondary" onClick={() => setWithdrawStep("form")}>Back</Button>
+                    <Button fullWidth variant="danger" onClick={() => setWithdrawStep("done")}>Confirm Withdrawal</Button>
+                  </div>
+                </div>
+              )}
+
+              {withdrawStep === "done" && (
+                <div className="text-center py-4 space-y-3">
+                  <div className="w-14 h-14 rounded-full bg-[rgba(40,199,111,0.1)] flex items-center justify-center mx-auto">
+                    <span className="text-2xl">✅</span>
+                  </div>
+                  <p className="text-sm text-[#E8ECF0]">Withdrawal request submitted</p>
+                  <p className="text-xs text-[#8F98A3]">
+                    <span className="font-mono">{parseFloat(withdrawAmount).toLocaleString()} USDC</span> will be available after the waiting period.
+                  </p>
+                  <p className="text-xs font-mono text-[#4A5568]">Demo mode — vault not yet deployed</p>
+                  <Button fullWidth onClick={() => setShowWithdraw(false)}>Done</Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
