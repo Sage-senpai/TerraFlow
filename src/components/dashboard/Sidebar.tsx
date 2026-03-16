@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
 import {
   LayoutDashboard, Wallet, ArrowDownToLine, BarChart3,
   Activity, Vote, BookOpen, ChevronRight, Zap
@@ -18,6 +19,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { publicKey, connected } = useWallet();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-[220px] bg-[#0F141A] border-r border-[#2A3340] flex flex-col z-40">
@@ -60,8 +62,12 @@ export function Sidebar() {
       <div className="px-4 pb-4 border-t border-[#2A3340] pt-4">
         <div className="rounded-xl bg-[#1B222B] border border-[#2A3340] px-3 py-2.5">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#28C76F] animate-pulse" />
-            <span className="text-xs text-[#8F98A3] font-mono">7xK2...9mFq</span>
+            <div className={`w-2 h-2 rounded-full ${connected ? "bg-[#28C76F] animate-pulse" : "bg-[#4A5568]"}`} />
+            <span className="text-xs text-[#8F98A3] font-mono">
+              {publicKey
+                ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
+                : "Not connected"}
+            </span>
           </div>
           <div className="mt-1 text-xs text-[#4A5568]">Solana Mainnet</div>
         </div>
