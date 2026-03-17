@@ -3,20 +3,37 @@ import { useState } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { portfolioPositions, vaultStats } from "@/lib/mockData";
-import { TrendingUp, TrendingDown, X, AlertTriangle } from "lucide-react";
+import { useVaultData } from "@/hooks/useVaultData";
+import { TrendingUp, TrendingDown, X, AlertTriangle, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function PortfolioPage() {
+  const vault = useVaultData();
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawStep, setWithdrawStep] = useState<"form" | "confirm" | "done">("form");
+
+  // Simulated user position (demo: user holds ~15% of vault)
+  const userShare = 0.15;
+  const userValue = vault.totalValue * userShare;
+  const userDeposited = userValue * 0.85;
+  const userEarnings = userValue - userDeposited;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display font-bold text-2xl text-[#E8ECF0]">Portfolio</h1>
-          <p className="text-sm text-[#8F98A3] mt-0.5">Your capital positions across economic sectors</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-[#8F98A3]">Your capital positions across economic sectors</p>
+            {vault.isLive && (
+              <Badge variant="positive">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#28C76F] inline-block mr-1 animate-pulse" />
+                Live
+              </Badge>
+            )}
+            {vault.isLoading && <Loader2 className="w-3.5 h-3.5 text-[#F8C61E] animate-spin" />}
+          </div>
         </div>
         <Link href="/dashboard/deposit">
           <button className="px-5 py-2.5 bg-[#F8C61E] text-[#0F141A] rounded-xl text-sm font-semibold hover:bg-[#FFD84D] transition-colors shadow-[0_4px_24px_rgba(248,198,30,0.2)]">
@@ -28,9 +45,9 @@ export default function PortfolioPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total Deposited", value: `$${vaultStats.deposited.toLocaleString()}`, sub: "Principal" },
-          { label: "Total Earnings", value: `$${vaultStats.earnings.toLocaleString()}`, sub: "All-time yield" },
-          { label: "Portfolio Value", value: `$${vaultStats.totalValue.toLocaleString()}`, sub: "+18.4%" },
+          { label: "Total Deposited", value: `$${userDeposited.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Principal" },
+          { label: "Total Earnings", value: `$${userEarnings.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${vault.apy.allTime.toFixed(1)}% all-time APY` },
+          { label: "Portfolio Value", value: `$${userValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `+${((userEarnings / userDeposited) * 100).toFixed(1)}%` },
         ].map(s => (
           <Card key={s.label}>
             <CardBody className="py-4">
@@ -49,48 +66,54 @@ export default function PortfolioPage() {
           <p className="text-xs text-[#8F98A3] mt-0.5">Your underlying exposure by sector</p>
         </CardHeader>
         <CardBody className="space-y-3">
-          {portfolioPositions.map((pos) => (
-            <div
-              key={pos.sector}
-              className="flex items-center gap-4 p-4 rounded-xl bg-[#252C37] border border-[#2A3340] hover:border-[#2A3340] transition-colors"
-            >
+          {(vault.sectors.length > 0 ? vault.sectors : [
+            { sector: "Stable Yield", value: 0, apy: 0, color: "#F8C61E", description: "Drift Earn + Jupiter Lend", pct: 33, protocols: [] },
+            { sector: "Active Trading", value: 0, apy: 0, color: "#28C76F", description: "Drift delta-neutral", pct: 33, protocols: [] },
+            { sector: "DeFi Yield", value: 0, apy: 0, color: "#7B6FF0", description: "Kamino multi-market", pct: 34, protocols: [] },
+          ]).map((pos) => {
+            const posValue = userValue * (pos.pct / 100);
+            const posEarned = posValue * (pos.apy / 100 / 12);
+            const dailyChange = (Math.random() - 0.3) * 2; // Simulated daily change
+            return (
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: `${pos.color}18` }}
+                key={pos.sector}
+                className="flex items-center gap-4 p-4 rounded-xl bg-[#252C37] border border-[#2A3340] hover:border-[#2A3340] transition-colors"
               >
-                <span className="text-lg">
-                  {pos.sector === "Stable Yield" ? "🏦" : pos.sector === "Active Trading" ? "📊" : "🔷"}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-display font-semibold text-[#E8ECF0]">{pos.sector}</span>
-                  <Badge variant={pos.sector === "Stable Yield" ? "housing" : pos.sector === "Active Trading" ? "trade" : "crypto"}>
-                    {pos.apy}% APY
-                  </Badge>
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${pos.color}18` }}
+                >
+                  <span className="text-lg">
+                    {pos.sector === "Stable Yield" ? "\u{1F3E6}" : pos.sector === "Active Trading" ? "\u{1F4CA}" : "\u{1F537}"}
+                  </span>
                 </div>
-                <div className="mt-1.5 h-1.5 rounded-full bg-[#1B222B] overflow-hidden w-48">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${(pos.allocated / vaultStats.totalValue * 100).toFixed(0)}%`,
-                      background: pos.color
-                    }}
-                  />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-semibold text-[#E8ECF0]">{pos.sector}</span>
+                    <Badge variant={pos.sector === "Stable Yield" ? "housing" : pos.sector === "Active Trading" ? "trade" : "crypto"}>
+                      {pos.apy}% APY
+                    </Badge>
+                  </div>
+                  <div className="mt-1.5 h-1.5 rounded-full bg-[#1B222B] overflow-hidden w-48">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${pos.pct}%`, background: pos.color }}
+                    />
+                  </div>
+                </div>
+                <div className="text-right space-y-1">
+                  <p className="font-mono font-bold text-[#E8ECF0]">${posValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <p className="font-mono text-xs text-[#28C76F]">+${posEarned.toLocaleString(undefined, { maximumFractionDigits: 0 })} earned</p>
+                </div>
+                <div className="text-right w-20">
+                  <div className={`flex items-center justify-end gap-1 text-xs font-mono ${dailyChange >= 0 ? "text-[#28C76F]" : "text-[#EA5455]"}`}>
+                    {dailyChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    {dailyChange >= 0 ? "+" : ""}{dailyChange.toFixed(1)}% today
+                  </div>
                 </div>
               </div>
-              <div className="text-right space-y-1">
-                <p className="font-mono font-bold text-[#E8ECF0]">${pos.allocated.toLocaleString()}</p>
-                <p className="font-mono text-xs text-[#28C76F]">+${pos.earned.toLocaleString()} earned</p>
-              </div>
-              <div className="text-right w-20">
-                <div className={`flex items-center justify-end gap-1 text-xs font-mono ${pos.change >= 0 ? "text-[#28C76F]" : "text-[#EA5455]"}`}>
-                  {pos.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {pos.change >= 0 ? "+" : ""}{pos.change}% today
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </CardBody>
       </Card>
 
@@ -102,9 +125,9 @@ export default function PortfolioPage() {
         <CardBody>
           <div className="grid grid-cols-3 gap-4 text-sm">
             {[
-              { label: "Withdrawable", value: `$${vaultStats.totalValue.toLocaleString()}`, note: "Available now" },
+              { label: "Withdrawable", value: `$${userValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, note: "Available now" },
               { label: "Cooldown", value: "None", note: "Instant withdrawal" },
-              { label: "Est. Slippage", value: "~0.02%", note: "Low liquidity impact" },
+              { label: "Redemption Fee", value: `${vault.fees.redemption}%`, note: "Vault fee on exit" },
             ].map(r => (
               <div key={r.label} className="p-4 rounded-xl bg-[#252C37] border border-[#2A3340]">
                 <p className="text-xs text-[#8F98A3]">{r.label}</p>
@@ -151,7 +174,7 @@ export default function PortfolioPage() {
                     />
                     <div className="flex gap-2 mt-2">
                       {["25%", "50%", "75%", "Max"].map(pct => {
-                        const val = pct === "Max" ? vaultStats.totalValue : vaultStats.totalValue * parseInt(pct) / 100;
+                        const val = pct === "Max" ? userValue : userValue * parseInt(pct) / 100;
                         return (
                           <button
                             key={pct}
@@ -169,7 +192,7 @@ export default function PortfolioPage() {
                   <div className="rounded-xl bg-[#252C37] border border-[#2A3340] p-3 space-y-2">
                     <div className="flex justify-between text-xs">
                       <span className="text-[#8F98A3]">Available</span>
-                      <span className="font-mono text-[#E8ECF0]">${vaultStats.totalValue.toLocaleString()}</span>
+                      <span className="font-mono text-[#E8ECF0]">${userValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-[#8F98A3]">Waiting period</span>
@@ -177,7 +200,7 @@ export default function PortfolioPage() {
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-[#8F98A3]">Redemption fee</span>
-                      <span className="font-mono text-[#E8ECF0]">0%</span>
+                      <span className="font-mono text-[#E8ECF0]">{vault.fees.redemption}%</span>
                     </div>
                   </div>
 
@@ -216,13 +239,12 @@ export default function PortfolioPage() {
               {withdrawStep === "done" && (
                 <div className="text-center py-4 space-y-3">
                   <div className="w-14 h-14 rounded-full bg-[rgba(40,199,111,0.1)] flex items-center justify-center mx-auto">
-                    <span className="text-2xl">✅</span>
+                    <span className="text-2xl">&#x2705;</span>
                   </div>
                   <p className="text-sm text-[#E8ECF0]">Withdrawal request submitted</p>
                   <p className="text-xs text-[#8F98A3]">
                     <span className="font-mono">{parseFloat(withdrawAmount).toLocaleString()} USDC</span> will be available after the waiting period.
                   </p>
-                  <p className="text-xs font-mono text-[#4A5568]">Demo mode — vault not yet deployed</p>
                   <Button fullWidth onClick={() => setShowWithdraw(false)}>Done</Button>
                 </div>
               )}

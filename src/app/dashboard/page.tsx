@@ -50,7 +50,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: "Vault Balance",
@@ -116,9 +116,9 @@ export default function DashboardPage() {
       )}
 
       {/* Main grid */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Allocation Chart — 2 cols */}
-        <Card className="col-span-2">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -137,7 +137,7 @@ export default function DashboardPage() {
               blendedApy={vault.apy.thirtyDays || undefined}
             />
             {/* Sector detail cards */}
-            <div className="grid grid-cols-3 gap-3 mt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
               {(vault.sectors.length > 0 ? vault.sectors : [
                 { sector: "Housing", value: 0, apy: 0, color: "#F8C61E", description: "Tokenized rental income", pct: 0, protocols: [] },
                 { sector: "Trade", value: 0, apy: 0, color: "#28C76F", description: "Invoice financing", pct: 0, protocols: [] },

@@ -7,10 +7,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-[#0F141A]">
       <Sidebar />
-      <div className="flex-1 ml-[220px] flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-[220px] flex flex-col min-h-screen">
         {/* Topbar */}
-        <header className="h-14 border-b border-[#2A3340] flex items-center justify-between px-6 bg-[#0F141A]/80 backdrop-blur-sm sticky top-0 z-30">
-          <div className="flex items-center gap-2">
+        <header className="h-14 border-b border-[#2A3340] flex items-center justify-between px-4 lg:px-6 bg-[#0F141A]/80 backdrop-blur-sm sticky top-0 z-30">
+          {/* Spacer for mobile hamburger */}
+          <div className="w-10 lg:hidden" />
+          <div className="hidden md:flex items-center gap-2">
             <span className="text-xs font-mono text-[#4A5568]">NET</span>
             <div className="w-1.5 h-1.5 rounded-full bg-[#28C76F]" />
             <span className="text-xs font-mono text-[#28C76F]">Solana</span>
@@ -21,7 +23,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="text-xs font-mono text-[#4A5568]">TVL</span>
             <span className="text-xs font-mono text-[#E8ECF0] ml-1">$284.5M</span>
           </div>
-          <div className="flex items-center gap-3">
+          {/* Mobile: compact brand */}
+          <div className="md:hidden flex items-center gap-2">
+            <span className="text-xs font-mono text-[#F8C61E]">Ranger Earn</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-[#28C76F]" />
+          </div>
+          <div className="flex items-center gap-2 lg:gap-3">
             <NotificationPanel />
             <SettingsPanel />
             <ConnectWalletButton compact />
@@ -29,7 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 lg:p-6">
           {children}
         </main>
       </div>

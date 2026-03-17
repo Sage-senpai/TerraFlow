@@ -70,7 +70,7 @@ export default function DocsPage() {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {links.map(l => (
           <a
             key={l.label}
