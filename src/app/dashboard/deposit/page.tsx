@@ -5,7 +5,8 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ConnectWalletButton } from "@/components/ui/ConnectWalletButton";
 import { useDeposit } from "@/hooks/useDeposit";
-import { Info, Zap, ExternalLink } from "lucide-react";
+import { useAppMode } from "@/contexts/AppModeContext";
+import { Info, Zap, ExternalLink, Eye } from "lucide-react";
 import { TERRAFLOW_VAULT_PUBKEY } from "@/lib/constants";
 
 const strategies = [
@@ -18,6 +19,7 @@ const riskColors: Record<string, string> = { Low: "#28C76F", Medium: "#F8C61E", 
 export default function DepositPage() {
   const { publicKey } = useWallet();
   const { deposit, status, txSig, error, reset } = useDeposit();
+  const { isDemo, demoDeposit } = useAppMode();
   const [amount, setAmount]     = useState("500");
   const [strategy, setStrategy] = useState("balanced");
 
@@ -55,8 +57,8 @@ export default function DepositPage() {
                 View on Solscan <ExternalLink className="w-3 h-3" />
               </a>
             )}
-            {txSig === "demo-mode-no-vault-deployed" && (
-              <p className="mt-3 text-xs font-mono text-[#4A5568]">Demo mode — vault not yet deployed</p>
+            {(txSig === "demo-mode-no-vault-deployed" || isDemo) && (
+              <p className="mt-3 text-xs font-mono text-[#F8C61E]">Demo mode — funds added to simulated portfolio</p>
             )}
 
             <div className="mt-6 w-full rounded-xl bg-[#252C37] border border-[#2A3340] px-5 py-4 text-left space-y-2">
@@ -88,7 +90,20 @@ export default function DepositPage() {
         <p className="text-sm text-[#8F98A3] mt-0.5">One deposit. TerraFlow handles the rest via Ranger Earn.</p>
       </div>
 
-      {!publicKey && (
+      {isDemo && (
+        <div className="rounded-xl bg-[rgba(248,198,30,0.06)] border border-[rgba(248,198,30,0.15)] p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Eye className="w-4 h-4 text-[#F8C61E]" />
+            <div>
+              <p className="text-sm font-medium text-[#E8ECF0]">Demo Mode</p>
+              <p className="text-xs text-[#8F98A3] mt-0.5">Deposits are simulated. Connect wallet for real transactions.</p>
+            </div>
+          </div>
+          <ConnectWalletButton />
+        </div>
+      )}
+
+      {!publicKey && !isDemo && (
         <div className="rounded-xl bg-[rgba(248,198,30,0.06)] border border-[rgba(248,198,30,0.15)] p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-[#E8ECF0]">Connect your wallet to deposit</p>
@@ -216,13 +231,23 @@ export default function DepositPage() {
 
               <Button
                 fullWidth
-                onClick={() => deposit(numAmount)}
+                onClick={() => {
+                  if (isDemo) {
+                    demoDeposit(numAmount, strategy);
+                    // Trigger success state for demo
+                    deposit(numAmount);
+                  } else {
+                    deposit(numAmount);
+                  }
+                }}
                 disabled={numAmount <= 0 || isLoading}
                 loading={isLoading}
               >
                 {isLoading
                   ? statusLabel[status]
-                  : `Deposit${numAmount > 0 ? ` ${numAmount.toLocaleString()} USDC` : ""}`}
+                  : isDemo
+                    ? `Demo Deposit${numAmount > 0 ? ` ${numAmount.toLocaleString()} USDC` : ""}`
+                    : `Deposit${numAmount > 0 ? ` ${numAmount.toLocaleString()} USDC` : ""}`}
               </Button>
               <p className="text-xs text-center text-[#4A5568]">
                 Powered by{" "}

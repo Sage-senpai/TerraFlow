@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { WalletProvider } from "@/components/providers/WalletProvider";
+import { AppModeProvider } from "@/contexts/AppModeContext";
 
 export const metadata: Metadata = {
   title: "TerraFlow — One Vault. Five Economies.",
@@ -22,7 +23,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <WalletProvider>
-          {children}
+          <AppModeProvider>
+            {children}
+          </AppModeProvider>
         </WalletProvider>
       </body>
     </html>

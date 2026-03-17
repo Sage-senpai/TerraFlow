@@ -1,14 +1,15 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Settings, X, Moon, Bell, Shield, Globe, ExternalLink } from "lucide-react";
+import { Settings, X, Moon, Bell, Shield, Globe, ExternalLink, Eye } from "lucide-react";
 import { REFERENCE_VAULT_PUBKEY } from "@/lib/constants";
+import { useAppMode } from "@/contexts/AppModeContext";
 
 interface ToggleProps { label: string; desc: string; icon: React.ElementType; enabled: boolean; onToggle: () => void }
 
 function Toggle({ label, desc, icon: Icon, enabled, onToggle }: ToggleProps) {
   return (
     <button onClick={onToggle} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#252C37] transition-colors text-left">
-      <div className="w-8 h-8 rounded-lg bg-[#252C37] flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-lg bg-[#252C37] flex items-center justify-center shrink-0">
         <Icon className="w-3.5 h-3.5 text-[#8F98A3]" />
       </div>
       <div className="flex-1 min-w-0">
@@ -27,6 +28,7 @@ export function SettingsPanel() {
   const [darkMode, setDarkMode] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [autoRebalance, setAutoRebalance] = useState(true);
+  const { forceDemo, setForceDemo, mode } = useAppMode();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,7 +57,18 @@ export function SettingsPanel() {
             </button>
           </div>
 
+          {/* Mode indicator */}
+          <div className="px-4 py-2.5 border-b border-[#2A3340]/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${mode === "demo" ? "bg-[#F8C61E]" : mode === "admin" ? "bg-[#7B6FF0]" : "bg-[#28C76F]"}`} />
+                <span className="text-xs font-mono text-[#E8ECF0] capitalize">{mode} Mode</span>
+              </div>
+            </div>
+          </div>
+
           <div className="divide-y divide-[#2A3340]/50">
+            <Toggle label="Demo Mode" desc="Simulated $50K portfolio" icon={Eye} enabled={forceDemo} onToggle={() => setForceDemo(!forceDemo)} />
             <Toggle label="Dark Mode" desc="Bloomberg terminal theme" icon={Moon} enabled={darkMode} onToggle={() => setDarkMode(!darkMode)} />
             <Toggle label="Notifications" desc="Rebalance and yield alerts" icon={Bell} enabled={notifications} onToggle={() => setNotifications(!notifications)} />
             <Toggle label="Auto-Rebalance" desc="AI engine manages allocation" icon={Shield} enabled={autoRebalance} onToggle={() => setAutoRebalance(!autoRebalance)} />

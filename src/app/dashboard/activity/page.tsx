@@ -3,7 +3,8 @@ import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useVaultData } from "@/hooks/useVaultData";
-import { ArrowDownToLine, ArrowLeftRight, Sparkles, Shield, Loader2 } from "lucide-react";
+import { useAppMode } from "@/contexts/AppModeContext";
+import { ArrowDownToLine, ArrowLeftRight, Sparkles, Shield, Loader2, Eye, ArrowUpFromLine } from "lucide-react";
 
 const typeConfig = {
   deposit: { icon: ArrowDownToLine, color: "#28C76F", bg: "rgba(40,199,111,0.1)", badge: "positive" as const, label: "Deposit", filter: "Deposits" },
@@ -50,12 +51,42 @@ function generateActivityLog(apy: { oneDay: number; sevenDays: number }, sectors
 
 export default function ActivityPage() {
   const vault = useVaultData();
+  const { isDemo, demoPortfolio } = useAppMode();
   const [activeFilter, setActiveFilter] = useState<string>("All");
 
-  const activityLog = useMemo(
-    () => generateActivityLog(vault.apy, vault.sectors),
-    [vault.apy, vault.sectors]
-  );
+  const activityLog = useMemo(() => {
+    const baseLog = generateActivityLog(vault.apy, vault.sectors);
+
+    // Prepend demo transactions if in demo mode
+    if (isDemo) {
+      const demoEntries: ActivityItem[] = [];
+      const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + " \u00B7 " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+      for (const tx of demoPortfolio.deposits) {
+        demoEntries.push({
+          id: 100 + demoEntries.length,
+          type: "deposit",
+          desc: `Deposited ${tx.amount.toLocaleString()} USDC (${tx.strategy})`,
+          time: fmt(tx.timestamp),
+          amount: `+$${tx.amount.toLocaleString()}`,
+          status: "confirmed",
+        });
+      }
+      for (const tx of demoPortfolio.withdrawals) {
+        demoEntries.push({
+          id: 200 + demoEntries.length,
+          type: "deposit" as const,
+          desc: `Withdrew ${tx.amount.toLocaleString()} USDC`,
+          time: fmt(tx.timestamp),
+          amount: `-$${tx.amount.toLocaleString()}`,
+          status: "confirmed",
+        });
+      }
+      return [...demoEntries, ...baseLog];
+    }
+
+    return baseLog;
+  }, [vault.apy, vault.sectors, isDemo, demoPortfolio]);
 
   const filtered = activeFilter === "All"
     ? activityLog

@@ -4,20 +4,24 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useVaultData } from "@/hooks/useVaultData";
-import { TrendingUp, TrendingDown, X, AlertTriangle, Loader2 } from "lucide-react";
+import { useUserPosition } from "@/hooks/useUserPosition";
+import { useAppMode } from "@/contexts/AppModeContext";
+import { TrendingUp, TrendingDown, X, AlertTriangle, Loader2, Eye } from "lucide-react";
 import Link from "next/link";
 
 export default function PortfolioPage() {
   const vault = useVaultData();
+  const position = useUserPosition();
+  const { isDemo, mode } = useAppMode();
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawStep, setWithdrawStep] = useState<"form" | "confirm" | "done">("form");
+  const { demoWithdraw } = useAppMode();
 
-  // Simulated user position (demo: user holds ~15% of vault)
-  const userShare = 0.15;
-  const userValue = vault.totalValue * userShare;
-  const userDeposited = userValue * 0.85;
-  const userEarnings = userValue - userDeposited;
+  const userValue = position.balance;
+  const userDeposited = position.deposited;
+  const userEarnings = position.earnings;
+  const earningsPct = userDeposited > 0 ? ((userEarnings / userDeposited) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -26,13 +30,19 @@ export default function PortfolioPage() {
           <h1 className="font-display font-bold text-2xl text-[#E8ECF0]">Portfolio</h1>
           <div className="flex items-center gap-2 mt-0.5">
             <p className="text-sm text-[#8F98A3]">Your capital positions across economic sectors</p>
-            {vault.isLive && (
+            {isDemo && (
+              <Badge variant="sunburst">
+                <Eye className="w-3 h-3 mr-1" />
+                Demo
+              </Badge>
+            )}
+            {!isDemo && vault.isLive && (
               <Badge variant="positive">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#28C76F] inline-block mr-1 animate-pulse" />
                 Live
               </Badge>
             )}
-            {vault.isLoading && <Loader2 className="w-3.5 h-3.5 text-[#F8C61E] animate-spin" />}
+            {position.isLoading && <Loader2 className="w-3.5 h-3.5 text-[#F8C61E] animate-spin" />}
           </div>
         </div>
         <Link href="/dashboard/deposit">
@@ -43,17 +53,17 @@ export default function PortfolioPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: "Total Deposited", value: `$${userDeposited.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Principal" },
-          { label: "Total Earnings", value: `$${userEarnings.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${vault.apy.allTime.toFixed(1)}% all-time APY` },
-          { label: "Portfolio Value", value: `$${userValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `+${((userEarnings / userDeposited) * 100).toFixed(1)}%` },
+          { label: "Total Deposited", value: `$${userDeposited.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: "Principal", color: "#8F98A3" },
+          { label: "Total Earnings", value: `$${userEarnings.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `${vault.apy.allTime.toFixed(1)}% all-time APY`, color: "#28C76F" },
+          { label: "Portfolio Value", value: `$${userValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, sub: `+${earningsPct.toFixed(1)}%`, color: "#28C76F" },
         ].map(s => (
           <Card key={s.label}>
             <CardBody className="py-4">
               <p className="text-xs text-[#8F98A3]">{s.label}</p>
               <p className="font-mono font-bold text-2xl text-[#E8ECF0] mt-1">{s.value}</p>
-              <p className="text-xs text-[#28C76F] font-mono mt-1">{s.sub}</p>
+              <p className="text-xs font-mono mt-1" style={{ color: s.color }}>{s.sub}</p>
             </CardBody>
           </Card>
         ))}
@@ -63,24 +73,26 @@ export default function PortfolioPage() {
       <Card>
         <CardHeader>
           <h2 className="font-display font-semibold text-[#E8ECF0]">Capital Allocation</h2>
-          <p className="text-xs text-[#8F98A3] mt-0.5">Your underlying exposure by sector</p>
+          <p className="text-xs text-[#8F98A3] mt-0.5">
+            {isDemo ? "Simulated exposure by sector" : "Your underlying exposure by sector"}
+          </p>
         </CardHeader>
         <CardBody className="space-y-3">
           {(vault.sectors.length > 0 ? vault.sectors : [
-            { sector: "Stable Yield", value: 0, apy: 0, color: "#F8C61E", description: "Drift Earn + Jupiter Lend", pct: 33, protocols: [] },
-            { sector: "Active Trading", value: 0, apy: 0, color: "#28C76F", description: "Drift delta-neutral", pct: 33, protocols: [] },
-            { sector: "DeFi Yield", value: 0, apy: 0, color: "#7B6FF0", description: "Kamino multi-market", pct: 34, protocols: [] },
+            { sector: "Stable Yield", value: 0, apy: 7, color: "#F8C61E", description: "Drift Earn + Jupiter Lend", pct: 33, protocols: [] },
+            { sector: "Active Trading", value: 0, apy: 22, color: "#28C76F", description: "Drift delta-neutral", pct: 33, protocols: [] },
+            { sector: "DeFi Yield", value: 0, apy: 10, color: "#7B6FF0", description: "Kamino multi-market", pct: 34, protocols: [] },
           ]).map((pos) => {
             const posValue = userValue * (pos.pct / 100);
             const posEarned = posValue * (pos.apy / 100 / 12);
-            const dailyChange = (Math.random() - 0.3) * 2; // Simulated daily change
+            const dailyChange = ((pos.apy / 365) * (0.5 + Math.random()));
             return (
               <div
                 key={pos.sector}
-                className="flex items-center gap-4 p-4 rounded-xl bg-[#252C37] border border-[#2A3340] hover:border-[#2A3340] transition-colors"
+                className="flex items-center gap-4 p-4 rounded-xl bg-[#252C37] border border-[#2A3340] transition-colors"
               >
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: `${pos.color}18` }}
                 >
                   <span className="text-lg">
@@ -95,20 +107,17 @@ export default function PortfolioPage() {
                     </Badge>
                   </div>
                   <div className="mt-1.5 h-1.5 rounded-full bg-[#1B222B] overflow-hidden w-48">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${pos.pct}%`, background: pos.color }}
-                    />
+                    <div className="h-full rounded-full" style={{ width: `${pos.pct}%`, background: pos.color }} />
                   </div>
                 </div>
-                <div className="text-right space-y-1">
+                <div className="text-right space-y-1 hidden sm:block">
                   <p className="font-mono font-bold text-[#E8ECF0]">${posValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                   <p className="font-mono text-xs text-[#28C76F]">+${posEarned.toLocaleString(undefined, { maximumFractionDigits: 0 })} earned</p>
                 </div>
-                <div className="text-right w-20">
-                  <div className={`flex items-center justify-end gap-1 text-xs font-mono ${dailyChange >= 0 ? "text-[#28C76F]" : "text-[#EA5455]"}`}>
-                    {dailyChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                    {dailyChange >= 0 ? "+" : ""}{dailyChange.toFixed(1)}% today
+                <div className="text-right w-20 hidden md:block">
+                  <div className="flex items-center justify-end gap-1 text-xs font-mono text-[#28C76F]">
+                    <TrendingUp className="w-3 h-3" />
+                    +{dailyChange.toFixed(2)}% today
                   </div>
                 </div>
               </div>
@@ -123,7 +132,7 @@ export default function PortfolioPage() {
           <h2 className="font-display font-semibold text-[#E8ECF0]">Withdraw</h2>
         </CardHeader>
         <CardBody>
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             {[
               { label: "Withdrawable", value: `$${userValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, note: "Available now" },
               { label: "Cooldown", value: "None", note: "Instant withdrawal" },
@@ -149,10 +158,10 @@ export default function PortfolioPage() {
       {/* Withdrawal Modal */}
       {showWithdraw && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-[#1B222B] border border-[#2A3340] rounded-2xl shadow-2xl">
+          <div className="w-full max-w-md bg-[#1B222B] border border-[#2A3340] rounded-2xl shadow-2xl mx-4">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2A3340]">
               <h3 className="font-display font-semibold text-[#E8ECF0]">
-                {withdrawStep === "done" ? "Withdrawal Requested" : "Withdraw Funds"}
+                {withdrawStep === "done" ? "Withdrawal Complete" : "Withdraw Funds"}
               </h3>
               <button onClick={() => setShowWithdraw(false)} className="text-[#4A5568] hover:text-[#8F98A3]">
                 <X className="w-4 h-4" />
@@ -188,22 +197,6 @@ export default function PortfolioPage() {
                       })}
                     </div>
                   </div>
-
-                  <div className="rounded-xl bg-[#252C37] border border-[#2A3340] p-3 space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-[#8F98A3]">Available</span>
-                      <span className="font-mono text-[#E8ECF0]">${userValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-[#8F98A3]">Waiting period</span>
-                      <span className="font-mono text-[#E8ECF0]">~5 min</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-[#8F98A3]">Redemption fee</span>
-                      <span className="font-mono text-[#E8ECF0]">{vault.fees.redemption}%</span>
-                    </div>
-                  </div>
-
                   <Button
                     fullWidth
                     variant="danger"
@@ -219,19 +212,22 @@ export default function PortfolioPage() {
                 <div className="space-y-4">
                   <div className="rounded-xl bg-[rgba(255,159,67,0.06)] border border-[rgba(255,159,67,0.15)] p-4">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-[#FF9F43] flex-shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-4 h-4 text-[#FF9F43] shrink-0 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-[#E8ECF0]">Confirm withdrawal</p>
                         <p className="text-xs text-[#8F98A3] mt-1">
-                          Withdrawing <span className="font-mono text-[#E8ECF0]">{parseFloat(withdrawAmount).toLocaleString()} USDC</span> from the vault.
-                          Funds will be available after a ~5 minute waiting period.
+                          Withdrawing <span className="font-mono text-[#E8ECF0]">{parseFloat(withdrawAmount).toLocaleString()} USDC</span>
+                          {isDemo && " (demo mode)"}
                         </p>
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <Button fullWidth variant="secondary" onClick={() => setWithdrawStep("form")}>Back</Button>
-                    <Button fullWidth variant="danger" onClick={() => setWithdrawStep("done")}>Confirm Withdrawal</Button>
+                    <Button fullWidth variant="danger" onClick={() => {
+                      if (isDemo) demoWithdraw(parseFloat(withdrawAmount));
+                      setWithdrawStep("done");
+                    }}>Confirm Withdrawal</Button>
                   </div>
                 </div>
               )}
@@ -241,9 +237,12 @@ export default function PortfolioPage() {
                   <div className="w-14 h-14 rounded-full bg-[rgba(40,199,111,0.1)] flex items-center justify-center mx-auto">
                     <span className="text-2xl">&#x2705;</span>
                   </div>
-                  <p className="text-sm text-[#E8ECF0]">Withdrawal request submitted</p>
+                  <p className="text-sm text-[#E8ECF0]">
+                    {isDemo ? "Demo withdrawal processed" : "Withdrawal request submitted"}
+                  </p>
                   <p className="text-xs text-[#8F98A3]">
-                    <span className="font-mono">{parseFloat(withdrawAmount).toLocaleString()} USDC</span> will be available after the waiting period.
+                    <span className="font-mono">{parseFloat(withdrawAmount).toLocaleString()} USDC</span>
+                    {isDemo ? " removed from demo portfolio" : " will be available after the waiting period"}
                   </p>
                   <Button fullWidth onClick={() => setShowWithdraw(false)}>Done</Button>
                 </div>

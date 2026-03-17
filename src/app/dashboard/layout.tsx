@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { ConnectWalletButton } from "@/components/ui/ConnectWalletButton";
 import { NotificationPanel } from "@/components/ui/NotificationPanel";
 import { SettingsPanel } from "@/components/ui/SettingsPanel";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -34,6 +35,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <ConnectWalletButton compact />
           </div>
         </header>
+
+        {/* Mode banner */}
+        <DemoBanner />
 
         {/* Page content */}
         <main className="flex-1 p-4 lg:p-6">

@@ -3,9 +3,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useAppMode } from "@/contexts/AppModeContext";
 import {
   LayoutDashboard, Wallet, ArrowDownToLine, BarChart3,
-  Activity, Vote, BookOpen, ChevronRight, Zap, Menu, X
+  Activity, Vote, BookOpen, ChevronRight, Zap, Menu, X, ShieldCheck
 } from "lucide-react";
 
 const navItems = [
@@ -21,7 +22,12 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { publicKey, connected } = useWallet();
+  const { isAdmin } = useAppMode();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const allNavItems = isAdmin
+    ? [...navItems, { href: "/dashboard/admin", label: "Admin", icon: ShieldCheck }]
+    : navItems;
 
   const navContent = (
     <>
@@ -40,7 +46,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {allNavItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
           return (
             <Link
