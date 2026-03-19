@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="42" fill="#0F141A"/>
+  <!-- Flowing T crossbar -->
+  <path d="M44 60 C68 50 124 50 148 60" stroke="#F8C61E" stroke-width="15" stroke-linecap="round" fill="none"/>
+  <!-- Stem -->
+  <path d="M96 60 L96 100" stroke="#F8C61E" stroke-width="15" stroke-linecap="round" fill="none"/>
+  <!-- Left stream -->
+  <path d="M96 100 C89 118 70 132 52 152" stroke="#F8C61E" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <!-- Center stream -->
+  <path d="M96 100 C98 118 94 134 96 152" stroke="#F8C61E" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <!-- Right stream -->
+  <path d="M96 100 C103 118 122 132 140 152" stroke="#F8C61E" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <!-- Economy dots -->
+  <circle cx="49" cy="155" r="5.5" fill="#F8C61E" opacity="0.6"/>
+  <circle cx="96" cy="155" r="5.5" fill="#F8C61E" opacity="0.8"/>
+  <circle cx="143" cy="155" r="5.5" fill="#F8C61E" opacity="0.6"/>
+</svg>

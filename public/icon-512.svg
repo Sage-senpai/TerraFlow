@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="108" fill="#0F141A"/>
+  <!-- Flowing T crossbar — gentle curve like terrain -->
+  <path d="M118 158 C180 138 332 138 394 158" stroke="#F8C61E" stroke-width="40" stroke-linecap="round" fill="none"/>
+  <!-- Stem flowing down -->
+  <path d="M256 158 L256 268" stroke="#F8C61E" stroke-width="40" stroke-linecap="round" fill="none"/>
+  <!-- Left stream — curves out gracefully -->
+  <path d="M256 268 C238 318 188 358 140 408" stroke="#F8C61E" stroke-width="32" stroke-linecap="round" fill="none"/>
+  <!-- Center stream — subtle S-curve -->
+  <path d="M256 268 C262 318 250 360 256 408" stroke="#F8C61E" stroke-width="32" stroke-linecap="round" fill="none"/>
+  <!-- Right stream — mirrors left -->
+  <path d="M256 268 C274 318 324 358 372 408" stroke="#F8C61E" stroke-width="32" stroke-linecap="round" fill="none"/>
+  <!-- Small dots at stream ends — the economies -->
+  <circle cx="133" cy="414" r="14" fill="#F8C61E" opacity="0.6"/>
+  <circle cx="256" cy="414" r="14" fill="#F8C61E" opacity="0.8"/>
+  <circle cx="379" cy="414" r="14" fill="#F8C61E" opacity="0.6"/>
+</svg>

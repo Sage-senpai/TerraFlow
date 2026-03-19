@@ -5,12 +5,22 @@ import { AppModeProvider } from "@/contexts/AppModeContext";
 
 export const metadata: Metadata = {
   title: "TerraFlow — One Vault. Five Economies.",
-  description: "AI-managed real-world yield vault. Deposit once. TerraFlow routes your capital across Housing, Trade, and Crypto sectors for optimized returns.",
-  keywords: ["DeFi", "yield vault", "real world assets", "RWA", "AI allocation", "TerraFlow"],
+  description: "AI-managed yield vault on Ranger Earn. Deposit USDC once — TerraFlow routes capital across Drift, Kamino, and Jupiter for optimized returns on Solana.",
+  keywords: ["DeFi", "yield vault", "Solana", "Ranger Earn", "Drift", "Kamino", "AI allocation", "TerraFlow", "USDC"],
+  manifest: "/manifest.json",
+  icons: [
+    { rel: "icon", url: "/icon-192.svg", type: "image/svg+xml" },
+  ],
   openGraph: {
     title: "TerraFlow — One Vault. Five Economies.",
-    description: "AI-managed real-world yield vault. Deposit once. TerraFlow allocates.",
+    description: "AI-managed yield vault on Ranger Earn. Deposit USDC once — TerraFlow allocates across Drift, Kamino & Jupiter.",
     type: "website",
+    siteName: "TerraFlow",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TerraFlow — One Vault. Five Economies.",
+    description: "AI-managed yield vault on Ranger Earn. Deposit USDC once — TerraFlow allocates across Drift, Kamino & Jupiter.",
   },
 };
 
@@ -21,6 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="theme-color" content="#0F141A" />
+      </head>
       <body className="antialiased">
         <WalletProvider>
           <AppModeProvider>
